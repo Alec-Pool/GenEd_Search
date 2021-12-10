@@ -8,54 +8,70 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
+
+import java.io.*;
+
 import java.util.*;
 
 public class Main {
 
   //  static ArrayList<Course> courses = new ArrayList<>();
     static double totalEnrolment = 0;
-    static double tempTotalEnrolment = 0;
+    static double totalNonWStudents = 0;
     // private ArrayList<Integer> grade
 
-    static String[] departments = {"AASP", "AAST", "AGNR","AMSC","AMST","ANSC","ANTH","AOSC","ARAB","ARCH","AREC","ARHU", "ARMY","ARSC","ARTH","ARTT","ASTR",
-            "BCHM","BEES","BIOE","BIOL","BIOM","BIPH","BISI","BMGT","BMSO","BSCI","BSCV","BSGC","BSOS","BSST","BUAC","BUDT","BUFN","BULM","BUMK","BUSI","BUSM","BUSO",
-            "CBMG","CCJS","CHBE","CHEM","CHIN","CHPH","CHSE","CLAS","CLFS","CMLT","CMSC","COMM","CPBE","CPET","CPGH","CPJT","CPMS","CPPL","CPSA","CPSD","CPSF","CPSG","CPSN","CPSP","CPSS",
-            "DANC","DATA",
-            "EALL","ECON","EDCP","EDHD","EDHI","EDMS","EDSP","EDUC","ENAE","ENCE","ENCH","ENCO","ENEB","ENEE","ENES","ENFP","ENGL","ENMA","ENME","ENPM","ENRE","ENSE","ENSP","ENST","ENTM","ENTS","EPIB",
-            "FGSM","FILM","FIRE","FMSC","FREN",
-            "GEMS","GEOG","GEOL","GERM","GREK","GVPT",
-            "HACS","HDCC","HEBR","HEIP","HESI","HESP","HHUM","HISP","HIST","HLSA","HLSC","HLTH","HNUH","HONR",
-            "IDEA","IMDM","IMMR","INAG","INFM","INST","ISRL","ITAL",
-            "JAPN","JOUR","JWST",
-            "KNES","KORA",
-            "LARC","LASC","LATN","LBSC","LGBT","LING",
-            "MAIT","MATH","MEES","MIEH","MITH","MLAW","MLSC","MSBB","MSML","MUED","MUCS",
-            "NACS","NAVY","NEUR","NFSC","NIAP","NIAV",
-            "PEER","PERS","PHIL","PHPE","PHSC","PHYS","PLCY","PLSC","PORT","PSYC",
-            "RDEV","RELS","RUSS",
-            "SLAA","SLLC","SMLP","SOCY","SPAN","SPHL","STAT","SURV",
-            "TDPS","THET","TLPL","TLTC",
-            "UMEI","UNIV","URSP","USLT",
-            "VMSC",
-            "WMST"};
+    static String[] departments;
+
+
+
 
     static double[] GPAs = new double[10];
     static ArrayList<ArrayList<String>> classArr = new ArrayList<ArrayList<String>>();
     static ArrayList<ArrayList<String>> courseID2DArr = new ArrayList<ArrayList<String>>();//indeces align with departments
 
 
-
     public static void main(String[] args) {
-        // make2DClassArr();
-        GPAs[0] = 0;
-        gradesRequest("Engl101");
 
-        for (int i = 0; i < classArr.size(); i++) {
 
+        try {
+            FileWriter myWriter = new FileWriter("departments.txt");
+
+
+            for (String currDep : departments) {
+                myWriter.write(currDep + "\n");
+            }
+
+            myWriter.close();
+            System.out.println("Successfully wrote to the file.");
+        } catch (IOException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
         }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // make2DClassArr();
+        //GPAs[0] = 0;
+        //gradesRequest("MATH140");
+
+       /* for (int i = 0; i < classArr.size(); i++) {
+
+        }*/
+
         //gradesRequestAndParse("ENGL101");
-        System.out.println("\n\nTotal Enrolment: " + totalEnrolment + "  GPA: " + GPAs[0]/tempTotalEnrolment);
+        //System.out.println("\n\nTotal Enrolment: " + totalEnrolment + "  GPA: " + GPAs[0]/ totalEnrolment /*totalNonWStudents /*totalEnrolment tempTotalEnrolment*/);
+
     }
 
 
@@ -140,7 +156,6 @@ public class Main {
             A_p = album.getInt("A+");
             GPAs[0]+= 4*(A_p);
 
-
             A_= album.getInt("A");
             GPAs[0]+= 4*A_;
 
@@ -172,9 +187,8 @@ public class Main {
             GPAs[0]+= 1*D_;
 
 
-
             D_m = album.getInt("D-");
-            GPAs[0]+= 0*D_m;
+            GPAs[0]+= 0.7*D_m;
 
             F_ = album.getInt("F");
             GPAs[0]+= 0*F_;
@@ -186,11 +200,11 @@ public class Main {
             totalStudents = A_p + A_ + A_m + B_p + B_ + B_m + C_p + C_ + C_m +
                     D_p + D_ + D_m + F_ + W_ + other;
 
-            int tempTotalStudents = A_p + A_ + A_m + B_p + B_ + B_m + C_p + C_ + C_m +
+            int nonWStudents = A_p + A_ + A_m + B_p + B_ + B_m + C_p + C_ + C_m +
                     D_p + D_ + D_m + F_ ;
 
             totalEnrolment += totalStudents;
-            tempTotalEnrolment =+ tempTotalStudents;
+            totalNonWStudents += nonWStudents;
 
             System.out.print(professor + ":");
 
