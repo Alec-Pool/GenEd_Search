@@ -8,6 +8,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import java.io.*;
 
@@ -32,6 +36,44 @@ public class runner {
 
     public static void main(String[] args) {
 
+
+        try {
+            Document doc = Jsoup.connect("https://app.testudo.umd.edu/soc/search?courseId=ANSC227&sectionId=&termId=202201&_openSectionsOnly=on&creditCompare=%3E%3D&credits=0.0&courseLevelFilter=ALL&instructor=&_facetoface=on&_blended=on&_online=on&courseStartCompare=&courseStartHour=&courseStartMin=&courseStartAM=&courseEndHour=&courseEndMin=&courseEndAM=&teachingCenter=ALL&_classDay1=on&_classDay2=on&_classDay3=on&_classDay4=on&_classDay5=on").userAgent("Mozilla/17.0").get();
+            Elements temp = doc.select("span.course-subcategory");
+
+            int i = 0;
+            for (Element edsList : temp) {
+                i++;
+                System.out.println(i + " " + edsList.getElementsByTag("a").first().text());
+            }
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+        loadDepartments();
+
+
+
+
+        System.out.println(departments);
+
+        // make2DClassArr();
+        //GPAs[0] = 0;
+        //gradesRequest("MATH140");
+
+       /* for (int i = 0; i < classArr.size(); i++) {
+
+        }*/
+
+        //gradesRequestAndParse("ENGL101");
+        //System.out.println("\n\nTotal Enrolment: " + totalEnrolment + "  GPA: " + GPAs[0]/ totalEnrolment /*totalNonWStudents /*totalEnrolment tempTotalEnrolment*/);
+
+    }
+
+    public static void loadDepartments() {
         BufferedReader reader;
 
         try {
@@ -49,54 +91,6 @@ public class runner {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        for (int i = 0; i < args.length; i++) {
-            System.out.println(args[0]);
-            //System.out.println(words.get(i));
-        }
-
-
-
-
-
-
-
-
-
-
-/*
-
-try {
-            FileWriter myWriter = new FileWriter("departments.txt");
-
-
-            for (String currDep : departments) {
-                myWriter.write(currDep + "\n");
-            }
-
-            myWriter.close();
-            System.out.println("Successfully wrote to the file.");
-        } catch (IOException e) {
-            System.out.println("An error occurred.");
-            e.printStackTrace();
-        }
-
- */
-
-
-
-
-        // make2DClassArr();
-        //GPAs[0] = 0;
-        //gradesRequest("MATH140");
-
-       /* for (int i = 0; i < classArr.size(); i++) {
-
-        }*/
-
-        //gradesRequestAndParse("ENGL101");
-        //System.out.println("\n\nTotal Enrolment: " + totalEnrolment + "  GPA: " + GPAs[0]/ totalEnrolment /*totalNonWStudents /*totalEnrolment tempTotalEnrolment*/);
-
     }
 
 
@@ -109,7 +103,7 @@ try {
 
     /* Returns 1 on success */
     // this gets all the course numbers for a department
-    public static int courseIDsRequest(String departmentName) {
+    public static int courseNumbersRequest(String departmentName) {
         int status = 1;
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
@@ -118,13 +112,18 @@ try {
 
         client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(HttpResponse::body)
-                .thenAccept(runner::parseCourseIDs)
+                .thenAccept(runner::parseCourseNumbers)
                 .join();
 
         return status;
     }
 
-    public static int parseCourseIDs(String responseBody) {
+    /*
+    Parses the courseIDRequest into JSONArray albums of
+
+    Returns 1 on success.
+     */
+    public static int parseCourseNumbers(String responseBody) {
         int status = 1;
         JSONArray albums = new JSONArray(responseBody);
 
@@ -133,6 +132,8 @@ try {
             String courseNumber;
 
             courseNumber = album.getString("course_number");
+
+            // need to do something with the course number, put in datastructure or something
         }
 
         return status;
@@ -140,6 +141,10 @@ try {
 
 
     /* Returns 1 on success */
+    /*
+    Retrieves the course grade data for
+    @Param courseName, in format "<department><courseNumber>" ex:MATH140
+     */
     public static int gradesRequest(String courseName) {
         int status = 1;
 
@@ -155,6 +160,11 @@ try {
 
         return status;
     }
+
+
+    /*
+    Parses the grades from the gradesRequest
+     */
 
 
     private static String parseGrades(String responseBody) {
@@ -260,6 +270,18 @@ try {
         return null;
 
     }
+
+
+
+
+    // course data request (
+
+    // course data parse
+
+
+    // get gen eds from testudo
+
+   // https://app.testudo.umd.edu/soc/search?courseId=GEOG330&sectionId=&termId=202201&_openSectionsOnly=on&creditCompare=&credits=&courseLevelFilter=ALL&instructor=&_facetoface=on&_blended=on&_online=on&courseStartCompare=&courseStartHour=&courseStartMin=&courseStartAM=&courseEndHour=&courseEndMin=&courseEndAM=&teachingCenter=ALL&_classDay1=on&_classDay2=on&_classDay3=on&_classDay4=on&_classDay5=on
 
 
 
