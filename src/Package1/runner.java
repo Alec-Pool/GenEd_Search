@@ -13,9 +13,9 @@ import java.io.*;
 
 import java.util.*;
 
-public class Main {
+public class runner {
 
-  //  static ArrayList<Course> courses = new ArrayList<>();
+    //  static ArrayList<Course> courses = new ArrayList<>();
     static double totalEnrolment = 0;
     static double totalNonWStudents = 0;
     // private ArrayList<Integer> grade
@@ -101,7 +101,7 @@ try {
 
 
     public static void make2DCourseIDArr() {
-        for (int i = 0; i < departments.length; i++) {
+        for (int i = 0; i < departments.size(); i++) {
             //classArr.add(departments[i]);
         }
     }
@@ -118,7 +118,7 @@ try {
 
         client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(HttpResponse::body)
-                .thenAccept(Main::parseCourseIDs)
+                .thenAccept(runner::parseCourseIDs)
                 .join();
 
         return status;
@@ -150,7 +150,7 @@ try {
 
         client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(HttpResponse::body)
-                .thenAccept(Main::parseGrades)
+                .thenAccept(runner::parseGrades)
                 .join();
 
         return status;
