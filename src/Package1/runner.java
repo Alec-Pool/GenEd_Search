@@ -29,9 +29,9 @@ public class runner {
 
 
 
-    static double[] GPAs = new double[10];
-    static ArrayList<ArrayList<String>> classArr = new ArrayList<ArrayList<String>>();
-    static ArrayList<ArrayList<String>> courseID2DArr = new ArrayList<ArrayList<String>>();//indeces align with departments
+    //static double[] GPAs = new double[10];
+    //static ArrayList<ArrayList<String>> classArr = new ArrayList<ArrayList<String>>();
+    //static ArrayList<ArrayList<String>> courseID2DArr = new ArrayList<ArrayList<String>>();//indeces align with departments
 
 
     public static void main(String[] args) {
@@ -54,6 +54,10 @@ public class runner {
 
 
         loadDepartments();
+
+
+
+
 
 
 
@@ -270,6 +274,52 @@ public class runner {
         return null;
 
     }
+
+
+
+
+
+
+
+
+
+
+    /*
+    Gets the course data for every course in a department
+     */
+    private static int departmentDataRequest(String department) {
+        int status = 1;
+
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.planetterp.com/v1/courses?department=" + department + "&limit=1000")) //courses?department=ENGL&limit=1000
+                .build();
+
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenApply(HttpResponse::body)
+                .thenAccept(runner::parseGrades)
+                .join();
+
+        return status;
+    }
+
+
+    private static String parseDepartment(String responseBody) {
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
