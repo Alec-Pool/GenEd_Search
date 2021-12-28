@@ -46,50 +46,17 @@ public class runner {
 
 
     public static void main(String[] args) {
-        //loadDepartments();
-        //createMasterMap();
-
-        //WriteObjectToFile(System.getProperty("user.dir") + "/masterMap" ,masterMap);
-
-        masterMap = (HashMap<String, TreeSet<Course>>) ReadObjectFromFile(System.getProperty("user.dir") +  "/masterMap");
-
-        startSession();
-
-
-
-
-
+        // Only uncomment when making a new masterMap
         /*
-        try {
-            Document doc = Jsoup.connect("https://app.testudo.umd.edu/soc/search?courseId=ANSC227&sectionId=&termId=202201&_openSectionsOnly=on&creditCompare=%3E%3D&credits=0.0&courseLevelFilter=ALL&instructor=&_facetoface=on&_blended=on&_online=on&courseStartCompare=&courseStartHour=&courseStartMin=&courseStartAM=&courseEndHour=&courseEndMin=&courseEndAM=&teachingCenter=ALL&_classDay1=on&_classDay2=on&_classDay3=on&_classDay4=on&_classDay5=on").userAgent("Mozilla/17.0").get();
-            Elements temp = doc.select("span.course-subcategory");
+        loadDepartments();
+        createMasterMap();
 
-            int i = 0;
-            for (Element edsList : temp) {
-                i++;
-                System.out.println(i + " " + edsList.getElementsByTag("a").first().text());
-            }
-
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-
-
-        System.out.println(departments);
-
-         make2DClassArr();
-        GPAs[0] = 0;
-        gradesRequest("MATH140");
-
-        for (int i = 0; i < classArr.size(); i++) {
-
-        }
-
-        gradesRequestAndParse("ENGL101");
-        System.out.println("\n\nTotal Enrolment: " + totalEnrolment + "  GPA: " + GPAs[0]/ totalEnrolment /*totalNonWStudents /*totalEnrolment tempTotalEnrolment);
+        WriteObjectToFile(System.getProperty("user.dir") + "/masterMap" ,masterMap);
         */
+
+        // Reads the masterMap from the file masterMap
+        masterMap = (HashMap<String, TreeSet<Course>>) ReadObjectFromFile(System.getProperty("user.dir") +  "/masterMap");
+        startSession();
     }
 
     public static void loadDepartments() {
@@ -216,23 +183,6 @@ public class runner {
         return null;
     }
 
-
-    private static int genEdRequest(String department) {
-        int status = 1;
-
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://api.planetterp.com/v1/courses?department=" + department + "&limit=1000")) //courses?department=ENGL&limit=1000
-                .build();
-
-        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenApply(HttpResponse::body)
-                .thenAccept(runner::parseDepartment)
-                .join();
-
-        return status;
-    }
-
     private static void createMasterMap() {
         int i = 0;
         for (String department : departments) {
@@ -268,9 +218,6 @@ public class runner {
             }
         }
     }
-
-
-
 
     public static void WriteObjectToFile(String filepath,Object serObj) {
         try {
