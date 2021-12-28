@@ -3,31 +3,42 @@ package Package1;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.io.*;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 
 import java.util.*;
 
 public class runner {
 
     //  static ArrayList<Course> courses = new ArrayList<>();
-    static double totalEnrolment = 0;
-    static double totalNonWStudents = 0;
+    private static double totalEnrolment = 0;
+    private static double totalNonWStudents = 0;
     // private ArrayList<Integer> grade
 
 
-    static ArrayList<String> departments = new ArrayList<>(); // pulling data from departments.txt
+    private static ArrayList<String> departments = new ArrayList<>(); // pulling data from departments.txt
 
+    // should each gen ed have its own TreeSet? Map of Gen Ed ID (DSHU...) to a sorted tree set of classes with that gen ed
 
+    private static String[] firstArr = {"FSAW", "FSAR", "FSMA", "FSOC", "FSPW", "DSHS", "DSHU", "DSNS","DSNL", "DSSP", "DVCC", "DVUP", "SCIS"};
+    private static Collection<String> genEdsArr = new ArrayList<String>(Arrays.asList(firstArr));
+    private static HashSet<String> eds = new HashSet<>(genEdsArr);
+
+    private static HashMap<String, TreeSet<Course>> masterMap = new HashMap<>();
+
+    private static HashSet<String> genEds = new HashSet<>();
 
     //static double[] GPAs = new double[10];
     //static ArrayList<ArrayList<String>> classArr = new ArrayList<ArrayList<String>>();
@@ -35,8 +46,20 @@ public class runner {
 
 
     public static void main(String[] args) {
+        //loadDepartments();
+        //createMasterMap();
+
+        //WriteObjectToFile(System.getProperty("user.dir") + "/masterMap" ,masterMap);
+
+        masterMap = (HashMap<String, TreeSet<Course>>) ReadObjectFromFile(System.getProperty("user.dir") +  "/masterMap");
+
+        startSession();
 
 
+
+
+
+        /*
         try {
             Document doc = Jsoup.connect("https://app.testudo.umd.edu/soc/search?courseId=ANSC227&sectionId=&termId=202201&_openSectionsOnly=on&creditCompare=%3E%3D&credits=0.0&courseLevelFilter=ALL&instructor=&_facetoface=on&_blended=on&_online=on&courseStartCompare=&courseStartHour=&courseStartMin=&courseStartAM=&courseEndHour=&courseEndMin=&courseEndAM=&teachingCenter=ALL&_classDay1=on&_classDay2=on&_classDay3=on&_classDay4=on&_classDay5=on").userAgent("Mozilla/17.0").get();
             Elements temp = doc.select("span.course-subcategory");
@@ -53,38 +76,33 @@ public class runner {
         }
 
 
-        loadDepartments();
-
-
-
-
-
-
-
 
         System.out.println(departments);
 
-        // make2DClassArr();
-        //GPAs[0] = 0;
-        //gradesRequest("MATH140");
+         make2DClassArr();
+        GPAs[0] = 0;
+        gradesRequest("MATH140");
 
-       /* for (int i = 0; i < classArr.size(); i++) {
+        for (int i = 0; i < classArr.size(); i++) {
 
-        }*/
+        }
 
-        //gradesRequestAndParse("ENGL101");
-        //System.out.println("\n\nTotal Enrolment: " + totalEnrolment + "  GPA: " + GPAs[0]/ totalEnrolment /*totalNonWStudents /*totalEnrolment tempTotalEnrolment*/);
-
+        gradesRequestAndParse("ENGL101");
+        System.out.println("\n\nTotal Enrolment: " + totalEnrolment + "  GPA: " + GPAs[0]/ totalEnrolment /*totalNonWStudents /*totalEnrolment tempTotalEnrolment);
+        */
     }
 
     public static void loadDepartments() {
         BufferedReader reader;
 
+        // test
+        //int i = 0;
         try {
             reader = new BufferedReader(new FileReader("departments.txt"));
             String line = reader.readLine();
 
-            while (line != null) {
+            while (line != null) {// && i < 3) {
+                //i++; //test
                 departments.add(line);
 
                 // read next line
@@ -95,18 +113,246 @@ public class runner {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        System.out.println("Departments Successfully Loaded");
     }
 
 
+
+
+    // add the new course to a hash map of genEd -> sorted TreeSet of courses by av GPA
+    private static void addCourse(Course newCourse) {
+        for (String currGenEd : newCourse.getGenEds()) {
+            if (masterMap.containsKey(currGenEd)) {
+                TreeSet temp = masterMap.get(currGenEd);
+                temp.add(newCourse);
+                //masterMap.put(currGenEd, temp);
+            } else {
+                TreeSet temp = new TreeSet<>();
+                temp.add(newCourse);
+                masterMap.put(currGenEd, temp);
+            }
+        }
+    }
+
+
+
+    /*
+    Gets the course data for every course in a department
+     */
+    private static int departmentDataRequest(String department) {
+        int status = 1;
+
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.planetterp.com/v1/courses?department=" + department + "&limit=1000")) //courses?department=ENGL&limit=1000
+                .build();
+
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenApply(HttpResponse::body)
+                .thenAccept(runner::parseDepartment)
+                .join();
+
+        return status;
+    }
+
+
+    /*
+    Parses the course data body from the departmentDataRequest
+     */
+    private static String parseDepartment(String responseBody) {
+        JSONArray albums = null;
+        try {
+            albums = new JSONArray(responseBody);
+        } catch (Exception e) {
+            return null;
+        }
+
+        ArrayList<Integer> grades = new ArrayList<>();
+        int totalStudents = 0;
+
+        for (int i = 0; i < albums.length(); i++) {
+            // each album is a course in the @param department
+            JSONObject album = albums.getJSONObject(i);
+
+            String ID = album.getString("course_number");
+            String department = album.getString("department");
+            float averageGPA;
+            try {
+                averageGPA = album.getFloat("average_gpa");
+            } catch (Exception e) {
+                continue;
+            }
+            ArrayList<String> genEds = new ArrayList<>();
+
+            if (Integer.valueOf(ID.substring(0,1)) >= 5) {
+                continue;
+            }
+
+            // scrape the testudo page for the gen eds of the current class
+            try {
+                String courseID = department + ID;
+                Document doc = Jsoup.connect("https://app.testudo.umd.edu/soc/search?courseId="+courseID+"&sectionId=&termId=202201&_openSectionsOnly=on&creditCompare=%3E%3D&credits=0.0&courseLevelFilter=ALL&instructor=&_facetoface=on&_blended=on&_online=on&courseStartCompare=&courseStartHour=&courseStartMin=&courseStartAM=&courseEndHour=&courseEndMin=&courseEndAM=&teachingCenter=ALL&_classDay1=on&_classDay2=on&_classDay3=on&_classDay4=on&_classDay5=on").userAgent("Mozilla/17.0").get();
+                Elements temp = doc.select("span.course-subcategory");
+
+                for (Element edsList : temp) {
+                    genEds.add(edsList.getElementsByTag("a").first().text());
+                }
+                System.out.println(i + " " + department + ID + " Gen Eds: " +genEds);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            Course newCourse = new Course(ID,department,averageGPA,genEds);
+
+            // add the new course to a hash map of genEd -> sorted TreeSet of courses by av GPA
+            addCourse(newCourse);
+        }
+
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+
+    private static int genEdRequest(String department) {
+        int status = 1;
+
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.planetterp.com/v1/courses?department=" + department + "&limit=1000")) //courses?department=ENGL&limit=1000
+                .build();
+
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenApply(HttpResponse::body)
+                .thenAccept(runner::parseDepartment)
+                .join();
+
+        return status;
+    }
+
+    private static void createMasterMap() {
+        int i = 0;
+        for (String department : departments) {
+            departmentDataRequest(department);
+            System.out.println(i);
+        }
+    }
+
+    private static void startSession() {
+        boolean done = false;
+        Scanner scanner = new Scanner(System.in);
+
+        while (!done) {
+            System.out.print("List of Gen Eds: " + eds.toString());
+            System.out.print("\nEnter a gen ed: ");
+            String next = scanner.next().toUpperCase();
+
+            if (next.equals("exit")){
+                System.out.println("Goodbye");
+                break;
+            }
+            else if (!eds.contains(next)) {
+                System.out.println("Invalid Gen-Ed, please try again");
+                continue;
+            } else {
+                System.out.println("Valid Gen-Ed Given, Printing Ordered List of Classes by GPA For "+ next +":");
+                System.out.println(next);
+                try{
+                    System.out.println(masterMap.get(next).descendingSet());
+                } catch (NullPointerException e) {
+                    System.out.println("Error: No Classes With This Gen Ed");
+                }
+            }
+        }
+    }
+
+
+
+
+    public static void WriteObjectToFile(String filepath,Object serObj) {
+        try {
+
+            FileOutputStream fileOut = new FileOutputStream(filepath);
+            ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
+            objectOut.writeObject(serObj);
+            objectOut.close();
+            System.out.println("The Master Map was succesfully written to a file");
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public static Object ReadObjectFromFile(String filepath) {
+        try {
+
+            FileInputStream fileIn = new FileInputStream(filepath);
+            ObjectInputStream objectIn = new ObjectInputStream(fileIn);
+
+            Object obj = objectIn.readObject();
+
+            System.out.println("The Master Map has been read from the file");
+            objectIn.close();
+            return obj;
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return null;
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // course data request (
+
+    // course data parse
+
+
+    // get gen eds from testudo
+
+   // https://app.testudo.umd.edu/soc/search?courseId=GEOG330&sectionId=&termId=202201&_openSectionsOnly=on&creditCompare=&credits=&courseLevelFilter=ALL&instructor=&_facetoface=on&_blended=on&_online=on&courseStartCompare=&courseStartHour=&courseStartMin=&courseStartAM=&courseEndHour=&courseEndMin=&courseEndAM=&teachingCenter=ALL&_classDay1=on&_classDay2=on&_classDay3=on&_classDay4=on&_classDay5=on
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /*
     public static void make2DCourseIDArr() {
         for (int i = 0; i < departments.size(); i++) {
             //classArr.add(departments[i]);
         }
     }
-
+    */
 
     /* Returns 1 on success */
     // this gets all the course numbers for a department
+    /*
     public static int courseNumbersRequest(String departmentName) {
         int status = 1;
         HttpClient client = HttpClient.newHttpClient();
@@ -121,12 +367,15 @@ public class runner {
 
         return status;
     }
+    */
+
 
     /*
     Parses the courseIDRequest into JSONArray albums of
 
     Returns 1 on success.
      */
+    /*
     public static int parseCourseNumbers(String responseBody) {
         int status = 1;
         JSONArray albums = new JSONArray(responseBody);
@@ -142,13 +391,14 @@ public class runner {
 
         return status;
     }
-
+    */
 
     /* Returns 1 on success */
     /*
     Retrieves the course grade data for
     @Param courseName, in format "<department><courseNumber>" ex:MATH140
      */
+    /*
     public static int gradesRequest(String courseName) {
         int status = 1;
 
@@ -164,13 +414,13 @@ public class runner {
 
         return status;
     }
-
+    */
 
     /*
     Parses the grades from the gradesRequest
      */
 
-
+    /*
     private static String parseGrades(String responseBody) {
         JSONArray albums = new JSONArray(responseBody);
         ArrayList<Integer> grades = new ArrayList<>();
@@ -274,64 +524,10 @@ public class runner {
         return null;
 
     }
+    */
 
 
 
-
-
-
-
-
-
-
-    /*
-    Gets the course data for every course in a department
-     */
-    private static int departmentDataRequest(String department) {
-        int status = 1;
-
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://api.planetterp.com/v1/courses?department=" + department + "&limit=1000")) //courses?department=ENGL&limit=1000
-                .build();
-
-        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenApply(HttpResponse::body)
-                .thenAccept(runner::parseGrades)
-                .join();
-
-        return status;
-    }
-
-
-    private static String parseDepartment(String responseBody) {
-
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // course data request (
-
-    // course data parse
-
-
-    // get gen eds from testudo
-
-   // https://app.testudo.umd.edu/soc/search?courseId=GEOG330&sectionId=&termId=202201&_openSectionsOnly=on&creditCompare=&credits=&courseLevelFilter=ALL&instructor=&_facetoface=on&_blended=on&_online=on&courseStartCompare=&courseStartHour=&courseStartMin=&courseStartAM=&courseEndHour=&courseEndMin=&courseEndAM=&teachingCenter=ALL&_classDay1=on&_classDay2=on&_classDay3=on&_classDay4=on&_classDay5=on
 
 
 

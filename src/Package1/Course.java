@@ -1,16 +1,19 @@
 package Package1;
 
 import java.util.*;
+import java.io.*;
 
-public class Course implements Comparable{
+public class Course implements Comparable, Serializable{
 
     private String ID;
     private String department;
     private float averageGPA;
-    private HashSet<String> genEds;
+    private ArrayList<String> genEds;
+
+    private static final long serialVersionUID = 1L;
 
 
-    public Course(String ID, String department, float averageGPA, HashSet<String> genEds) {
+    public Course(String ID, String department, float averageGPA, ArrayList<String> genEds) {
         this.ID = ID;
         this.department = department;
         this.averageGPA = averageGPA;
@@ -41,11 +44,11 @@ public class Course implements Comparable{
         this.averageGPA = averageGPA;
     }
 
-    public HashSet<String> getGenEds() {
+    public ArrayList<String> getGenEds() {
         return genEds;
     }
 
-    public void setGenEds(HashSet<String> genEds) {
+    public void setGenEds(ArrayList<String> genEds) {
         this.genEds = genEds;
     }
 
@@ -56,7 +59,7 @@ public class Course implements Comparable{
 
     @Override
     public String toString() {
-        return "Department: " + getDepartment() + " ID: " + getID() + " GPA: " + averageGPA;
+        return "Course: " + getDepartment() + getID() + " GPA: " + averageGPA;
     }
 
 
