@@ -16,6 +16,6 @@ This task would normally require a large amount of manual work, but I made this 
 1. **Sent** HTTP GET Requests to the PlanetTerp API to retrieve the *Average GPA* and *ID* of each course for each department at UMD.
 2. **Processed and Parsed** JSON formatted response using a third party JSON Parser.
 3. **Implemented** the **JSoup** HTML Web Scraping API to gather the Gen Eds covered by each course using the UMD Course Registry.
-4. **Stored** processed data in self-made Data Structure, a Hash Map which mappings of String -> TreeSet<Course>.
+4. **Stored** processed data in self-made Data Structure, a Hash Map of mappings of String -> TreeSet<Course>.
     - The **Key:** *String* represents a Gen Ed from the set, {"FSAW", "FSAR", "FSMA", "FSOC", "FSPW", "DSHS", "DSHU", "DSNS","DSNL", "DSSP", "DVCC", "DVUP", "SCIS"}
     - The **Value:** *TreeSet<Course>* is an ordered Set of *Course* objects that covers the Gen Ed *Key*. I used a TreeSet so that the *Courses* are ordered by their average GPA per their *compareTo* function that I implemented.
